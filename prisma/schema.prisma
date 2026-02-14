@@ -1,0 +1,146 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Clerk Auth User Model
+model User {
+  id        String   @id @unique
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  resume    Resume?
+}
+
+// Main Resume Model
+model Resume {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Personal Info
+  fullName  String?
+  email     String?
+  phone     String?
+  location  String?
+  website   String?
+  
+  // Summary
+  summary   String?
+  
+  // Skills (simple array of strings)
+  skills    String[]
+
+  cachedJobFeed Json?     @default("[]")
+  feedUpdatedAt DateTime?
+
+  // Relations to other models
+  workExperience WorkExperience[] 
+  educations     Education[]      
+  projects       Project[]        
+  certifications Certification[]  
+  volunteerWork  VolunteerWork[]  
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Work Experience Model
+model WorkExperience {
+  id          String   @id @default(cuid())
+  resumeId    String
+  resume      Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  
+  jobTitle    String
+  company     String
+  location    String? 
+  startDate   DateTime?
+  endDate     DateTime?
+  description String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Education Model
+model Education {
+  id          String   @id @default(cuid())
+  resumeId    String
+  resume      Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  
+  school      String
+  degree      String
+  fieldOfStudy String? 
+  startDate   DateTime?
+  endDate     DateTime?
+  description String? // <<<--- THIS IS THE FIX
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- NEW MODELS ---
+
+// Project Model
+model Project {
+  id          String   @id @default(cuid())
+  resumeId    String
+  resume      Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?
+  url         String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Certification Model
+model Certification {
+  id          String   @id @default(cuid())
+  resumeId    String
+  resume      Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  
+  name        String
+  issuer      String?
+  date        DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Volunteer Work Model
+model VolunteerWork {
+  id          String   @id @default(cuid())
+  resumeId    String
+  resume      Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  
+  organization String
+  role         String
+  startDate    DateTime?
+  endDate      DateTime?
+  description  String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- CAREER BOT MODEL ---
+
+// Chat History Model
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String   // This will be the Clerk User ID
+  role      String   // "user" or "model"
+  content   String
+  createdAt DateTime @default(now())
+  
+  @@index([userId, createdAt]) // Index for fast chat history retrieval
+}
